@@ -27,6 +27,7 @@ def run_web_server():
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
+        [InlineKeyboardButton("🚀 ابدأ", callback_data="start")],
         [InlineKeyboardButton("⛏️ التعدين", callback_data="mining")],
         [
             InlineKeyboardButton("🎁 المكافأة اليومية", callback_data="daily"),
@@ -53,7 +54,13 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    if query.data == "mining":
+    if query.data == "start":
+        text = (
+            "🎉 أهلاً في Zelvo!\n\n"
+            "🚀 أنت الآن داخل المشروع."
+        )
+
+    elif query.data == "mining":
         text = (
             "⛏️ التعدين\n\n"
             "💰 الرصيد: 0 ZELVO\n"
@@ -72,6 +79,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "leaderboard":
         text = "🏆 الترتيب\n\n🚧 قريبًا."
+
+    else:
+        text = "🍃 ZELVO"
 
     keyboard = [
         [InlineKeyboardButton("🔙 رجوع", callback_data="back")]
