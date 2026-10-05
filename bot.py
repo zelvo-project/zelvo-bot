@@ -27,15 +27,24 @@ def run_web_server():
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton("🚀 ابدأ", callback_data="start")]
+        [InlineKeyboardButton("⛏️ التعدين", callback_data="mining")],
+        [
+            InlineKeyboardButton("🎁 المكافأة اليومية", callback_data="daily"),
+            InlineKeyboardButton("📋 المهام", callback_data="tasks"),
+        ],
+        [
+            InlineKeyboardButton("👥 الإحالات", callback_data="referrals"),
+            InlineKeyboardButton("🏆 الترتيب", callback_data="leaderboard"),
+        ],
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "👋 أهلاً في Zelvo!\n\n"
-        "🚀 أهلاً في أول نسخة تجريبية من المشروع.\n\n"
-        "اضغط الزر للبدء:",
+        "🍃 ZELVO\n\n"
+        "💰 الرصيد: 0 ZELVO\n"
+        "⚡ سرعة التعدين: 0.426 ZELVO / ساعة\n\n"
+        "🚀 أهلاً في النسخة التجريبية!",
         reply_markup=reply_markup,
     )
 
@@ -44,12 +53,34 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    if query.data == "start":
-        await query.edit_message_text(
-            "🎉 أهلاً في Zelvo!\n\n"
-            "🚀 أنت الآن داخل المشروع.\n\n"
-            "قريبًا رح نضيف المهام والمكافآت والسرعة."
+    if query.data == "mining":
+        text = (
+            "⛏️ التعدين\n\n"
+            "💰 الرصيد: 0 ZELVO\n"
+            "⚡ السرعة: 0.426 ZELVO / ساعة\n\n"
+            "🚧 نظام التعدين قيد التجربة."
         )
+
+    elif query.data == "daily":
+        text = "🎁 المكافأة اليومية\n\n🚧 قيد التجربة."
+
+    elif query.data == "tasks":
+        text = "📋 المهام\n\n🚧 قريبًا."
+
+    elif query.data == "referrals":
+        text = "👥 الإحالات\n\n🚧 قريبًا."
+
+    elif query.data == "leaderboard":
+        text = "🏆 الترتيب\n\n🚧 قريبًا."
+
+    keyboard = [
+        [InlineKeyboardButton("🔙 رجوع", callback_data="back")]
+    ]
+
+    await query.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 
 def main():
