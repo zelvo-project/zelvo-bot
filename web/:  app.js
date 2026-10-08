@@ -2,7 +2,15 @@ const tg = window.Telegram.WebApp;
 
 tg.ready();
 tg.expand();
-
+fetch("/api/register", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        telegram_id: tg.initDataUnsafe.user?.id
+    })
+});
 const mineButton = document.getElementById("mineButton");
 
 mineButton.addEventListener("click", () => {
