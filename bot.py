@@ -1,5 +1,6 @@
 import os
 import psycopg2
+import json
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -20,13 +21,29 @@ TOKEN = os.environ.get("BOT_TOKEN")
 PORT = int(os.environ.get("PORT", 10000))
 WEBAPP_URL = os.environ.get("WEBAPP_URL")
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
+
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL)
+def save_user(telegram_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO users (telegram_id)
+        VALUES (%s)
+        ON CONFLICT (telegram_id) DO NOTHING
+    """, (telegram_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
 class WebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory="web", **kwargs)
 
     def log_message(self, format, *args):
         pass
-
 
 def run_web_server():
     server = ThreadingHTTPServer(("0.0.0.0", PORT), WebHandler)
