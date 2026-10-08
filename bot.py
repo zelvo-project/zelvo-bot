@@ -1,4 +1,5 @@
 import os
+import psycopg2
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -18,8 +19,7 @@ from telegram.ext import (
 TOKEN = os.environ.get("BOT_TOKEN")
 PORT = int(os.environ.get("PORT", 10000))
 WEBAPP_URL = os.environ.get("WEBAPP_URL")
-
-
+DATABASE_URL = os.environ.get("DATABASE_URL")
 class WebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory="web", **kwargs)
@@ -114,9 +114,25 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
+def init_db():
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            telegram_id BIGINT PRIMARY KEY,
+            balance NUMERIC DEFAULT 0,
+            mining_speed NUMERIC DEFAULT 0,
+            referrals INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
 def main():
-
+    init_db()
     if not TOKEN:
         raise ValueError("BOT_TOKEN is not set.")
 
