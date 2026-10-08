@@ -44,7 +44,47 @@ class WebHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, format, *args):
         pass
+    def do_GET(self):
+        if self.path.startswith("/api/balance"):
+            try:
+                from urllib.parse import urlparse, parse_qs
 
+                query = parse_qs(urlparse(self.path).query)
+                telegram_id = int(query["telegram_id"][0])
+
+                conn = get_db_connection()
+                cur = conn.cursor()
+
+                cur.execute(
+                    "SELECT balance FROM users WHERE telegram_id = %s",
+                    (telegram_id,)
+                )
+
+                row = cur.fetchone()
+
+                cur.close()
+                conn.close()
+
+                balance = row[0] if row else 0
+
+                response = {
+                    "balance": float(balance)
+                }
+
+                response_bytes = json.dumps(response).encode("utf-8")
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(response_bytes)))
+                self.end_headers()
+                self.wfile.write(response_bytes)
+
+            except Exception:
+                self.send_error(400)
+
+            return
+
+        super().do_GET()
 def run_web_server():
     server = ThreadingHTTPServer(("0.0.0.0", PORT), WebHandler)
     print(f"Web server running on port {PORT}")
