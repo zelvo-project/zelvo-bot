@@ -2,6 +2,11 @@ const tg = window.Telegram.WebApp;
 
 tg.ready();
 tg.expand();
+fetch("/api/balance?telegram_id=" + tg.initDataUnsafe.user?.id)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("balance").textContent = data.balance;
+    });
 fetch("/api/register", {
     method: "POST",
     headers: {
