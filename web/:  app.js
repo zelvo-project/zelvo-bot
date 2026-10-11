@@ -73,6 +73,8 @@ if (mineButton) {
             tg.showAlert?.(`ربحت ${data.reward} ZELVO 🍃`);
         } catch (error) {
             tg.showAlert?.(error.message);
+                    } catch (error) {
+            tg.showAlert("فشل التعدين: " + error.message);
             console.error("Mining error:", error);
         } finally {
             setTimeout(() => {
