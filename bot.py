@@ -24,6 +24,8 @@ PORT = int(os.environ.get("PORT", 10000))
 WEBAPP_URL = os.environ.get("WEBAPP_URL")
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+MINE_REWARD = 1
+MINE_COOLDOWN_SECONDS = 10
 
 from urllib.parse import parse_qsl
 import time
