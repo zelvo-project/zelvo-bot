@@ -130,13 +130,19 @@ class WebHandler(SimpleHTTPRequestHandler):
         except Exception:
             self.send_error(400)
 
+    
     def do_GET(self):
-        if self.path.startswith("/api/balance"):
+        if self.path.split("?")[0] == "/api/balance":
             try:
-                from urllib.parse import urlparse, parse_qs
+                init_data = self.headers.get(
+                    "X-Telegram-Init-Data", ""
+                )
 
-                query = parse_qs(urlparse(self.path).query)
-                telegram_id = int(query["telegram_id"][0])
+                telegram_id = verify_telegram_init_data(init_data)
+
+                if not telegram_id:
+                    self.send_error(401, "Invalid Telegram data")
+                    return
 
                 conn = get_db_connection()
                 cur = conn.cursor()
@@ -151,19 +157,15 @@ class WebHandler(SimpleHTTPRequestHandler):
                 cur.close()
                 conn.close()
 
-                balance = row[0] if row else 0
-
-                response = {
-                    "balance": float(balance)
-                }
-
-                response_bytes = json.dumps(response).encode("utf-8")
+                response = json.dumps({
+                    "balance": float(row[0]) if row else 0
+                }).encode("utf-8")
 
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(response_bytes)))
+                self.send_header("Content-Length", str(len(response)))
                 self.end_headers()
-                self.wfile.write(response_bytes)
+                self.wfile.write(response)
 
             except Exception:
                 self.send_error(400)
@@ -171,6 +173,7 @@ class WebHandler(SimpleHTTPRequestHandler):
             return
 
         super().do_GET()
+
 def run_web_server():
     server = ThreadingHTTPServer(("0.0.0.0", PORT), WebHandler)
     print(f"Web server running on port {PORT}")
