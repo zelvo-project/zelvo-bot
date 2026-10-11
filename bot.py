@@ -94,6 +94,42 @@ class WebHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, format, *args):
         pass
+ 
+    def do_POST(self):
+        if self.path != "/api/register":
+            self.send_error(404)
+            return
+
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if length <= 0 or length > 10000:
+                self.send_error(400)
+                return
+
+            body = json.loads(self.rfile.read(length))
+            init_data = body.get("init_data", "")
+
+            telegram_id = verify_telegram_init_data(init_data)
+
+            if not telegram_id:
+                self.send_error(401, "Invalid Telegram data")
+                return
+
+            save_user(telegram_id)
+
+            response = json.dumps({
+                "success": True
+            }).encode("utf-8")
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(response)))
+            self.end_headers()
+            self.wfile.write(response)
+
+        except Exception:
+            self.send_error(400)
+
     def do_GET(self):
         if self.path.startswith("/api/balance"):
             try:
