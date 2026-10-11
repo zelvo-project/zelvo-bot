@@ -97,10 +97,9 @@ class WebHandler(SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
  
+
     def do_POST(self):
-        if self.path != "/api/register":
-            self.send_error(404)
-            return
+        path = self.path.split("?")[0]
 
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -110,29 +109,72 @@ class WebHandler(SimpleHTTPRequestHandler):
 
             body = json.loads(self.rfile.read(length))
             init_data = body.get("init_data", "")
-
             telegram_id = verify_telegram_init_data(init_data)
 
             if not telegram_id:
                 self.send_error(401, "Invalid Telegram data")
                 return
 
-            save_user(telegram_id)
+            if path == "/api/register":
+                save_user(telegram_id)
+                response = {"success": True}
 
-            response = json.dumps({
-                "success": True
-            }).encode("utf-8")
+            elif path == "/api/mine":
+                conn = get_db_connection()
+                cur = conn.cursor()
 
-            self.send_response(200)
+                try:
+                    cur.execute("""
+                        UPDATE users
+                        SET balance = balance + %s,
+                            last_mined_at = CURRENT_TIMESTAMP
+                        WHERE telegram_id = %s
+                          AND (
+                              last_mined_at IS NULL
+                              OR last_mined_at <=
+                                 CURRENT_TIMESTAMP -
+                                 (%s * INTERVAL '1 second')
+                          )
+                        RETURNING balance
+                    """, (
+                        MINE_REWARD,
+                        telegram_id,
+                        MINE_COOLDOWN_SECONDS
+                    ))
+
+                    row = cur.fetchone()
+                    conn.commit()
+
+                    if row is None:
+                        self.send_response(429)
+                        response = {
+                            "success": False,
+                            "message": "استنى 10 ثواني قبل التعدين مرة ثانية"
+                        }
+                    else:
+                        self.send_response(200)
+                        response = {
+                            "success": True,
+                            "balance": float(row[0]),
+                            "reward": MINE_REWARD
+                        }
+                finally:
+                    cur.close()
+                    conn.close()
+
+            else:
+                self.send_error(404)
+                return
+
+            response_bytes = json.dumps(response).encode("utf-8")
             self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(response)))
+            self.send_header("Content-Length", str(len(response_bytes)))
             self.end_headers()
-            self.wfile.write(response)
+            self.wfile.write(response_bytes)
 
         except Exception:
-            self.send_error(400)
+            self.send_error(500)
 
-    
     def do_GET(self):
         if self.path.split("?")[0] == "/api/balance":
             try:
