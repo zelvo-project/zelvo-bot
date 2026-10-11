@@ -7,6 +7,41 @@ tg.expand();
 const balanceElement = document.getElementById("balance");
 const mineButton = document.getElementById("mineButton");
 
+async function postRequest(path) {
+    const response = await fetch(path, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            init_data: tg.initData
+        })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message || "حدث خطأ");
+    }
+
+    return data;
+}
+
+async function loadBalance() {
+    const response = await fetch("/api/balance", {
+        headers: {
+            "X-Telegram-Init-Data": tg.initData
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error("تعذر تحميل الرصيد");
+    }
+
+    const data = await response.json();
+    balanceElement.textContent = data.balance;
+}
+
 async function registerUser() {
     if (!tg.initData) {
         console.error("Telegram data is missing.");
@@ -14,42 +49,10 @@ async function registerUser() {
     }
 
     try {
-        const response = await fetch("/api/register", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                init_data: tg.initData
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error("Registration failed: " + response.status);
-        }
-
+        await postRequest("/api/register");
         await loadBalance();
     } catch (error) {
         console.error("Registration error:", error);
-    }
-}
-
-async function loadBalance() {
-    try {
-        const response = await fetch("/api/balance", {
-            headers: {
-                "X-Telegram-Init-Data": tg.initData
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error("Balance request failed: " + response.status);
-        }
-
-        const data = await response.json();
-        balanceElement.textContent = data.balance;
-    } catch (error) {
-        console.error("Balance error:", error);
     }
 }
 
@@ -58,13 +61,23 @@ if (balanceElement) {
 }
 
 if (mineButton) {
-    mineButton.addEventListener("click", () => {
+    mineButton.addEventListener("click", async () => {
+        if (!tg.initData || mineButton.disabled) return;
+
+        mineButton.disabled = true;
         tg.HapticFeedback?.impactOccurred("medium");
 
-        mineButton.style.transform = "scale(0.97)";
-
-        setTimeout(() => {
-            mineButton.style.transform = "";
-        }, 120);
+        try {
+            const data = await postRequest("/api/mine");
+            balanceElement.textContent = data.balance;
+            tg.showAlert?.(`ربحت ${data.reward} ZELVO 🍃`);
+        } catch (error) {
+            tg.showAlert?.(error.message);
+            console.error("Mining error:", error);
+        } finally {
+            setTimeout(() => {
+                mineButton.disabled = false;
+            }, 10000);
+        }
     });
 }
