@@ -314,8 +314,14 @@ def init_db():
             balance NUMERIC DEFAULT 0,
             mining_speed NUMERIC DEFAULT 0,
             referrals INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_mined_at TIMESTAMP
         )
+    """)
+
+    cur.execute("""
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS last_mined_at TIMESTAMP
     """)
 
     conn.commit()
