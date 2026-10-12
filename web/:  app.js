@@ -1,4 +1,3 @@
-
 const tg = window.Telegram.WebApp;
 
 tg.ready();
@@ -6,6 +5,25 @@ tg.expand();
 
 const balanceElement = document.getElementById("balance");
 const mineButton = document.getElementById("mineButton");
+
+async function readResponse(response) {
+    const text = await response.text();
+    let data;
+
+    try {
+        data = JSON.parse(text);
+    } catch {
+        throw new Error(
+            `استجابة غير مفهومة من السيرفر (HTTP ${response.status})`
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(data.message || `خطأ HTTP ${response.status}`);
+    }
+
+    return data;
+}
 
 async function postRequest(path) {
     const response = await fetch(path, {
@@ -18,13 +36,7 @@ async function postRequest(path) {
         })
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.message || "حدث خطأ");
-    }
-
-    return data;
+    return await readResponse(response);
 }
 
 async function loadBalance() {
@@ -34,25 +46,24 @@ async function loadBalance() {
         }
     });
 
-    if (!response.ok) {
-        throw new Error("تعذر تحميل الرصيد");
-    }
-
-    const data = await response.json();
+    const data = await readResponse(response);
     balanceElement.textContent = data.balance;
 }
 
 async function registerUser() {
     if (!tg.initData) {
         console.error("Telegram data is missing.");
+        tg.showAlert("افتح Zelvo من داخل تيليجرام.");
         return;
     }
 
     try {
         await postRequest("/api/register");
         await loadBalance();
+        console.log("Zelvo: تم تسجيل المستخدم وتحميل الرصيد.");
     } catch (error) {
         console.error("Registration error:", error);
+        tg.showAlert("تعذّر تحميل الرصيد: " + error.message);
     }
 }
 
@@ -62,20 +73,29 @@ if (balanceElement) {
 
 if (mineButton) {
     mineButton.addEventListener("click", async () => {
-        if (!tg.initData || mineButton.disabled) return;
+        if (!tg.initData) {
+            tg.showAlert("افتح Zelvo من داخل تيليجرام.");
+            return;
+        }
+
+        if (mineButton.disabled) {
+            return;
+        }
 
         mineButton.disabled = true;
         tg.HapticFeedback?.impactOccurred("medium");
 
         try {
             const data = await postRequest("/api/mine");
-            balanceElement.textContent = data.balance;
-            tg.showAlert?.(`ربحت ${data.reward} ZELVO 🍃`);
+
+            if (balanceElement) {
+                balanceElement.textContent = data.balance;
+            }
+
+            tg.showAlert(`ربحت ${data.reward} ZELVO 🍃`);
         } catch (error) {
-            tg.showAlert?.(error.message);
-                    } catch (error) {
-            tg.showAlert("فشل التعدين: " + error.message);
             console.error("Mining error:", error);
+            tg.showAlert("فشل التعدين: " + error.message);
         } finally {
             setTimeout(() => {
                 mineButton.disabled = false;
