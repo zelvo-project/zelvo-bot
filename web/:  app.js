@@ -1,6 +1,7 @@
 const tg = window.Telegram.WebApp;
 
 tg.ready();
+tg.showAlert("اختبار Zelvo: JavaScript يعمل 🍃");
 tg.expand();
 
 const balanceElement = document.getElementById("balance");
