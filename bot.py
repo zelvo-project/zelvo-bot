@@ -298,10 +298,20 @@ class WebHandler(SimpleHTTPRequestHandler):
 
 
 def run_web_server():
+    web_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "web",
+    )
+
+    print(f"Web directory: {web_dir}", flush=True)
+    print(
+        f"Web files: {os.listdir(web_dir) if os.path.isdir(web_dir) else 'MISSING'}",
+        flush=True,
+    )
+
     server = ThreadingHTTPServer(("0.0.0.0", PORT), WebHandler)
     print(f"Web server running on port {PORT}", flush=True)
     server.serve_forever()
-
 
 def main_keyboard():
     return InlineKeyboardMarkup(
