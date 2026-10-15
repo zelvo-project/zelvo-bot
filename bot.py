@@ -122,14 +122,16 @@ def init_db():
 
 class WebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-    web_dir = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "web"
-    )
-    super().__init__(*args, directory=web_dir, **kwargs)
+        web_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "web",
+        )
+        super().__init__(*args, directory=web_dir, **kwargs)
 
-def log_message(self, format, *args):
-    print(format % args, flush=True)
+    def log_message(self, format, *args):
+        # Log requests in Render so missing static files can be diagnosed.
+        print(format % args, flush=True)
+
     def send_json(self, status, data):
         response = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -142,25 +144,36 @@ def log_message(self, format, *args):
     def get_telegram_id(self, init_data):
         telegram_id = verify_telegram_init_data(init_data)
         if not telegram_id:
-            raise PermissionError("بيانات تيليجرام غير صالحة. افتح التطبيق من البوت.")
+            raise PermissionError(
+                "بيانات تيليجرام غير صالحة. افتح التطبيق من البوت."
+            )
         return telegram_id
 
     def do_POST(self):
         path = self.path.split("?")[0]
 
         if path not in ("/api/register", "/api/mine"):
-            self.send_json(404, {"success": False, "message": "المسار غير موجود"})
+            self.send_json(
+                404,
+                {"success": False, "message": "المسار غير موجود"},
+            )
             return
 
         try:
             length = int(self.headers.get("Content-Length", "0"))
             if length <= 0 or length > 10000:
-                self.send_json(400, {"success": False, "message": "حجم الطلب غير صالح"})
+                self.send_json(
+                    400,
+                    {"success": False, "message": "حجم الطلب غير صالح"},
+                )
                 return
 
             body = json.loads(self.rfile.read(length))
             if not isinstance(body, dict):
-                self.send_json(400, {"success": False, "message": "صيغة الطلب غير صالحة"})
+                self.send_json(
+                    400,
+                    {"success": False, "message": "صيغة الطلب غير صالحة"},
+                )
                 return
 
             telegram_id = self.get_telegram_id(body.get("init_data", ""))
@@ -221,17 +234,26 @@ def log_message(self, format, *args):
             )
 
         except PermissionError as error:
-            self.send_json(401, {"success": False, "message": str(error)})
+            self.send_json(
+                401,
+                {"success": False, "message": str(error)},
+            )
 
         except (ValueError, TypeError, json.JSONDecodeError):
-            self.send_json(400, {"success": False, "message": "البيانات المرسلة غير صالحة"})
+            self.send_json(
+                400,
+                {"success": False, "message": "البيانات المرسلة غير صالحة"},
+            )
 
         except Exception:
             traceback.print_exc()
             try:
                 self.send_json(
                     500,
-                    {"success": False, "message": "خطأ داخلي في السيرفر. راجع Render Logs."},
+                    {
+                        "success": False,
+                        "message": "خطأ داخلي في السيرفر. راجع Render Logs.",
+                    },
                 )
             except Exception:
                 pass
@@ -259,13 +281,19 @@ def log_message(self, format, *args):
             )
 
         except PermissionError as error:
-            self.send_json(401, {"success": False, "message": str(error)})
+            self.send_json(
+                401,
+                {"success": False, "message": str(error)},
+            )
 
         except Exception:
             traceback.print_exc()
             self.send_json(
                 500,
-                {"success": False, "message": "تعذّر تحميل الرصيد. راجع Render Logs."},
+                {
+                    "success": False,
+                    "message": "تعذّر تحميل الرصيد. راجع Render Logs.",
+                },
             )
 
 
@@ -285,7 +313,10 @@ def main_keyboard():
                 )
             ],
             [
-                InlineKeyboardButton("ℹ️ عن Zelvo", callback_data="info")
+                InlineKeyboardButton(
+                    "ℹ️ عن Zelvo",
+                    callback_data="info",
+                )
             ],
         ]
     )
