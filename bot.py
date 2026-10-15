@@ -122,11 +122,14 @@ def init_db():
 
 class WebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory="web", **kwargs)
+    web_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "web"
+    )
+    super().__init__(*args, directory=web_dir, **kwargs)
 
-    def log_message(self, format, *args):
-        pass
-
+def log_message(self, format, *args):
+    print(format % args, flush=True)
     def send_json(self, status, data):
         response = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
